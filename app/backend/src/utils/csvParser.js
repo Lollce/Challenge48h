@@ -11,11 +11,12 @@ async function parseCSV(filePath, delimiter = ',') {
     const buffer = fs.readFileSync(filePath);
     let content;
     
-    // Try UTF-8 first, then Latin-1
-    try {
-      content = buffer.toString('utf-8');
-    } catch (e) {
+    // Try UTF-8 first; if garbled (replacement chars), fall back to Latin-1
+    const utf8 = buffer.toString('utf-8');
+    if (utf8.includes('\uFFFD')) {
       content = iconv.decode(buffer, 'latin1');
+    } else {
+      content = utf8;
     }
     
     // Detect delimiter if needed
@@ -135,8 +136,14 @@ async function parseCSVStream(filePath, onChunk, chunkSize = 1000) {
       .on('data', (jsonObject) => {
         let record = jsonObject;
 
-        // csvtojson may provide string, so ensure object
-        if (typeof record === 'string') {
+        // csvtojson emits Buffer/string from data events — parse to object
+        if (Buffer.isBuffer(record)) {
+          try {
+            record = JSON.parse(record.toString());
+          } catch (err) {
+            return reject(new Error(`Failed to parse JSON chunk from CSV: ${err.message}`));
+          }
+        } else if (typeof record === 'string') {
           try {
             record = JSON.parse(record);
           } catch (err) {

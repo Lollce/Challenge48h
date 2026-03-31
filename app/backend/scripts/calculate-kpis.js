@@ -32,22 +32,22 @@ async function calculateKPIs() {
         ROUND(AVG(tc.nombre_total_lots)) as avg_lots_per_copro,
         ROUND(LEAST(100, MAX(th.motorized_households) / 1000), 2) as parking_demand_score,
         ROUND(LEAST(100, COUNT(DISTINCT tc.numero_d_immatriculation) / 100), 2) as market_size_score,
-        ROUND(
+        COALESCE(ROUND(
           SUM(CASE WHEN tc.longitude IS NOT NULL THEN 1 ELSE 0 END) * 100.0 /
           NULLIF(COUNT(DISTINCT tc.numero_d_immatriculation), 0),
           2
-        ) as accessibility_score,
-        ROUND(
+        ), 0) as accessibility_score,
+        COALESCE(ROUND(
           SUM(CASE WHEN tc.is_aided = TRUE THEN 1 ELSE 0 END) * 100.0 /
           NULLIF(COUNT(DISTINCT tc.numero_d_immatriculation), 0),
           2
-        ) as aid_penetration_rate,
+        ), 0) as aid_penetration_rate,
         ROUND(
           (
             LEAST(100, MAX(th.motorized_households) / 1000) * 0.35 +
             LEAST(100, COUNT(DISTINCT tc.numero_d_immatriculation) / 100) * 0.35 +
-            (SUM(CASE WHEN tc.longitude IS NOT NULL THEN 1 ELSE 0 END) * 100.0 /
-             NULLIF(COUNT(DISTINCT tc.numero_d_immatriculation), 0)) * 0.30
+            COALESCE(SUM(CASE WHEN tc.longitude IS NOT NULL THEN 1 ELSE 0 END) * 100.0 /
+             NULLIF(COUNT(DISTINCT tc.numero_d_immatriculation), 0), 0) * 0.30
           ),
           2
         ) as overall_commercial_potential

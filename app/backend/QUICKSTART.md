@@ -9,7 +9,7 @@ Ensure you have:
 - ✓ Node.js installed
 - ✓ CSV data files in `backend/data/`
 
-## Setup in 5 Steps
+## Setup in 6 Steps
 
 ### 1. Install Dependencies (1 min)
 
@@ -58,11 +58,27 @@ This runs:
 
 Watch the progress output. Errors are logged, not fatal.
 
-### 5. Build & Calculate (3-5 min)
+### 5. Process All KPIs (recommended, 3-5 min)
+
+```bash
+npm run process-data
+```
+
+This runs `scripts/process-all-kpis.js`, which:
+1. Reads all CSV sources
+2. Computes KPI scores
+3. Populates raw + transformed + KPI tables
+4. Applies score normalization and ranking
+
+### 6. Optional manual/legacy pipeline
+
+Use this only if you want to run each phase separately:
 
 ```bash
 node scripts/build-transformed-tables.js
 node scripts/calculate-kpis.js
+node scripts/_normalize-scores.js
+node scripts/_normalize-paris.js
 ```
 
 Creates:
@@ -170,8 +186,12 @@ Ensure you ran all steps:
 ```bash
 npm run init-db         # ✓ confirmed?
 npm run import-data     # ✓ completed without errors?
-node scripts/build-transformed-tables.js  # ✓ did this?
-node scripts/calculate-kpis.js            # ✓ and this?
+npm run process-data    # ✓ preferred complete pipeline?
+# OR manual pipeline:
+node scripts/build-transformed-tables.js
+node scripts/calculate-kpis.js
+node scripts/_normalize-scores.js
+node scripts/_normalize-paris.js
 ```
 
 ## What's Next?
@@ -210,6 +230,6 @@ Database: parkshare
 ---
 
 **Estimated total time: 30 minutes**  
-(5 min setup + 20 min data import + 5 min transform/KPI)
+(5 min setup + 20 min data import + 5 min process-all-kpis)
 
 Need help? Check [README.md](./README.md) for full docs.
