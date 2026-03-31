@@ -17,7 +17,8 @@ async function initializeDatabase() {
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 3306,
       user: process.env.DB_USER || 'parkuser',
-      password: process.env.DB_PASSWORD === undefined ? 'parkpass' : process.env.DB_PASSWORD
+      password: process.env.DB_PASSWORD === undefined ? 'parkpass' : process.env.DB_PASSWORD,
+      multipleStatements: true
     });
 
     console.log('✓ Connected to MySQL server\n');
@@ -49,27 +50,11 @@ async function initializeDatabase() {
     const schema = fs.readFileSync(schemaPath, 'utf8');
     console.log('✓ Schema file loaded\n');
 
-    // Split schema into individual statements and execute
+    // Execute the full schema at once. This avoids dropping CREATE statements
+    // that are preceded by SQL comments in the file.
     console.log('Creating tables...');
-    const statements = schema
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt && !stmt.startsWith('--'));
-
-    let tableCount = 0;
-    for (const statement of statements) {
-      if (statement.includes('CREATE TABLE')) {
-        tableCount++;
-      }
-      try {
-        await connection.execute(statement);
-      } catch (error) {
-        // Some statements might fail (like DROP IF EXISTS on first run), which is ok
-        if (!error.message.includes('already exists')) {
-          console.warn(`⚠ Statement warning: ${error.message.substring(0, 60)}...`);
-        }
-      }
-    }
+    const tableCount = (schema.match(/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS/gi) || []).length;
+    await connection.query(schema);
 
     console.log(`✓ Database schema created (${tableCount} tables)\n`);
 
